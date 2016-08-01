@@ -8,6 +8,42 @@
 
 		tick: function(tick) {
 			var room = tick.target;
+			var sources = room.find(FIND_SOURCES);
+			//console.log("IdentifySources.  room: "+room+", sources: "+sources);
+			if(sources.length > 0) {
+				var minerCount = 0;
+				for(var i in sources) {
+					var source = sources[i];
+
+
+					if(source.pos.findInRange(FIND_STRUCTURES, 5, {filter: { structureType: STRUCTURE_KEEPER_LAIR }}).length > 0) {
+						continue;
+					} 
+
+					var x = source.pos.x;
+					var y = source.pos.y;
+					var lookArea = room.lookAtArea(y-1, x-1, y+1, x+1, true);
+					//console.log("Source:",source);
+					//console.log("lookArea:",lookArea);
+
+					for(var l in lookArea) {
+						var look = lookArea[l];
+						//console.log(look['x'],look['y'],look['type'],look['terrain']);
+						if(look['type'] === LOOK_TERRAIN && (look[LOOK_TERRAIN] === 'plain' || look[LOOK_TERRAIN] === 'swamp')) {
+							var flagName = "minerflag-"+room.name+"-"+minerCount++;
+							if(room.createFlag(look['x'], look['y'], flagName, COLOR_BLUE) === flagName) {
+								console.log("Created minerflag: "+flagName+" at: "+look['x']+","+look['y']);
+							}
+						}
+					}
+				}
+				if(minerCount > 0) {
+					room.memory['minerCount'] = minerCount;
+				}
+				return b3.SUCCESS;
+			} else {
+				return b3.FAILURE;
+			}
 
 			return b3.SUCCESS;
 		}
@@ -24,6 +60,7 @@
 		tick: function(tick) {
 			var room = tick.target;
 
+			room.memory['goal'] = 'upgrade';
 			return b3.SUCCESS;
 		}
 	});
@@ -39,8 +76,67 @@
 		tick: function(tick) {
 			var room = tick.target;
 
+			var spawns = room.find(FIND_MY_STRUCTURES, {
+				filter: { structureType : STRUCTURE_SPAWN }
+			});
+			if(spawns.length === 0) {
+				return b3.FAILURE;
+			}
+			var spawn = spawns[0];
+			if(spawn.spawning != null) {
+				return b3.RUNNING;
+			}
+
+		    var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
+		    var upgraders =  _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
+		    var builders =  _.filter(Game.creeps, (creep) => creep.memory.role == 'builder');
+		    var miners =  _.filter(Game.creeps, (creep) => creep.memory.role == 'miner');
+		    var transporters =  _.filter(Game.creeps, (creep) => creep.memory.role == 'transporter');
+
+		    if(Object.keys(Game.creeps).length === 0) {
+		    	this.spawnHarvester(room, spawn);
+		    } else if(miners.length >= 1 && harvesters.length > 0) {
+		    	harvesters[0].memory.role = 'transporter';
+		    	console.log('Converting harvester to transporter');
+		    } else if(miners.length < 3) {
+		        this.spawnMiner(room, spawn);
+		    } else if(transporters.length < 3) {
+		        this.spawnTransporter(room, spawn);
+		    } else if(builders.length < 2) {
+		    	this.spawnBuilder(room, spawn);
+		    } else if(upgraders.length < 2) {
+		    	this.spawnUpgrader(room, spawn);
+		    }			
+			
+			
 			return b3.SUCCESS;
+		},
+		
+		spawnHarvester: function(room, spawn) {
+	        var newName = spawn.createCreep([WORK,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'harvester'});
+	        console.log('Spawning new harvester: ' + newName);
+		},
+		
+		spawnMiner: function(room, spawn) {
+			var newName = spawn.createCreep([WORK,WORK,MOVE], undefined, {role: 'miner'});
+	        console.log('Spawning new miner: ' + newName);
+		},
+		
+		spawnTransporter: function(room, spawn) {
+			var newName = spawn.createCreep([MOVE,CARRY,MOVE,CARRY], undefined, {role: 'transporter'});
+	        console.log('Spawning new transporter: ' + newName);
+		},
+		
+		spawnBuilder: function(room, spawn) {
+	        var newName = spawn.createCreep([WORK,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'builder'});
+	        console.log('Spawning new builder: ' + newName);
+		},
+		
+		spawnUpgrader: function(room, spawn) {
+	        var newName = spawn.createCreep([WORK,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'upgrader'});
+	        console.log('Spawning new upgrader: ' + newName);			
 		}
+		
 	});
 })();
 

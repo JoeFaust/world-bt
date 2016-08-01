@@ -8,6 +8,7 @@ var cleanMemory = require('clean.memory');
 var constructorRoads = require('constructor.roads');
 
 var creepTree = require('b3_tree_creep');
+var roomTree = require('b3_tree_room');
 
 var BlackboardScreeps = require('b3_blackboard_screeps');
 var blackboard = new BlackboardScreeps();
@@ -26,38 +27,6 @@ module.exports.loop = function () {
     }
     
     var room = Game.spawns.Spawn1.room;
-
-    var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == 'harvester');
-    //console.log('Harvesters: ' + harvesters.length);
-    var upgraders =  _.filter(Game.creeps, (creep) => creep.memory.role == 'upgrader');
-    //console.log('Upgraders: ' + upgraders.length);
-    var builders =  _.filter(Game.creeps, (creep) => creep.memory.role == 'builder');
-    //console.log('Builders: ' + builders.length);
-    var miners =  _.filter(Game.creeps, (creep) => creep.memory.role == 'miner');
-    //console.log('Builders: ' + builders.length);
-    var transporters =  _.filter(Game.creeps, (creep) => creep.memory.role == 'transporter');
-    //console.log('Builders: ' + builders.length);
-
-    if(Object.keys(Game.creeps).length === 0) {
-        var newName = Game.spawns.Spawn1.createCreep([WORK,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'harvester'});
-        console.log('Spawning new harvester: ' + newName);
-    } else if(miners.length >= 1 && harvesters.length > 0) {
-    	harvesters[0].memory.role = 'transporter';
-    	console.log('Converting harvester to transporter');
-    } else if(miners.length < 3) {
-        var newName = Game.spawns.Spawn1.createCreep([WORK,WORK,MOVE], undefined, {role: 'miner'});
-        console.log('Spawning new miner: ' + newName);
-    } else if(transporters.length < 3) {
-        var newName = Game.spawns.Spawn1.createCreep([MOVE,CARRY,MOVE,CARRY], undefined, {role: 'transporter'});
-        console.log('Spawning new transporter: ' + newName);
-    } else if(builders.length < 2) {
-        var newName = Game.spawns.Spawn1.createCreep([WORK,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'builder'});
-        console.log('Spawning new builder: ' + newName);
-    } else if(upgraders.length < 2) {
-        var newName = Game.spawns.Spawn1.createCreep([WORK,CARRY,CARRY,MOVE,MOVE], undefined, {role: 'upgrader'});
-        console.log('Spawning new upgrader: ' + newName);
-    }
-
 
     //var towers = _.filter(Game.structures, (structure) => structure.structureType == Game.STRUCTURE_TOWER);
 
@@ -94,6 +63,14 @@ module.exports.loop = function () {
         creepTree.tick(creep, blackboard);
     }
     creepTree.id = treeId;
+    
+    var roomTreeId = roomTree.id;
+    for(var roomName in Game.rooms) {
+    	var room = Game.rooms[roomName];
+    	roomTree.id = roomTreeId + "-" + room.name;
+    	roomTree.tick(room, blackboard);
+    }
+    roomTree.id = roomTreeId;
     
     //constructorRoads.run(room);
     

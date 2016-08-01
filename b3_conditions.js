@@ -10,16 +10,19 @@
 			throw new Error('frequency must be defined for FrequencyCheck');
 		}
 
+		//console.log("FrequencyCheck initialize.  frequency:",settings.frequency);
 		b3.Condition.prototype.initialize.call(this);
 		this.frequency = settings.frequency;
 	},
 
 	b3.FrequencyCheck.prototype.tick = function(tick) {
 
+		//console.log("FrequencyCheck.  Game.time:",Game.time);
 		if (Game.time % this.frequency === 0) {
+			//console.log("FrequencyCheck.  SUCCESS");
 			return b3.SUCCESS;
 		}
-
+		//console.log("FrequencyCheck.  FAILURE");
 		return b3.FAILURE;
 	}
 })();
